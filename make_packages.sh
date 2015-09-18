@@ -5,6 +5,7 @@
 REPO_DIR=/media/oberon/projects/ArchLinux/repo
 REPO_DB=${REPO_DIR}/i686/repo.db.tar.gz
 REPO_DB64=${REPO_DIR}/x86_64/repo.db.tar.gz
+REPO_DB_ANY=${REPO_DIR}/any/repo.db.tar.gz
 
 set -e
 
@@ -26,8 +27,17 @@ for i in *;do
         makepkg -Cfsc
         if [[ "$*" == *--repo-add* ]] ; then
           for j in *x86_64.pkg.tar.xz; do
-            cp $j ${REPO_DIR}/x86_64/
-            repo-add ${REPO_DB64} ${REPO_DIR}/x86_64/$j
+            if [ -f $j ] ; then
+              cp $j ${REPO_DIR}/x86_64/
+              repo-add ${REPO_DB64} ${REPO_DIR}/x86_64/$j
+            fi
+          done
+          # copy and register 'any' packages as well
+          for j in *any.pkg.tar.xz; do
+            if [ -f $j ] ; then
+              cp $j ${REPO_DIR}/any/
+              repo-add ${REPO_DB_ANY} ${REPO_DIR}/any/$j
+            fi
           done
         fi
       fi
