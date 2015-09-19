@@ -1,0 +1,7 @@
+# ignore built packages
+*.xz
+
+# ignore makepkg build directories
+src/
+pkg/
+
