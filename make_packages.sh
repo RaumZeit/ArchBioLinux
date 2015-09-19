@@ -10,7 +10,7 @@ CWD=`pwd`
 LOGFILE="${CWD}/packages.log"
 CONFIG32="${CWD}/.makepkg.i686.conf"
 
-make_commands="-s" # install missing dependencies
+make_commands="-sr --noprogressbar" # install missing dependencies
 
 BUILD=1
 UPDATE=0
