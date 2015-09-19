@@ -2,11 +2,12 @@
 #
 
 #REPO_DIR=/path/to/your/repo
-REPO_DIR="/media/oberon/projects/ArchLinux/repo"
+REPO_DIR="/home/ronny/ArchRepo/ArchBio"
 
 set -e
 
 CWD=`pwd`
+PKGBUILD_PARSER="${CWD}/pkgbuild-parse.sh"
 LOGFILE="${CWD}/packages.log"
 CONFIG32="${CWD}/.makepkg.i686.conf"
 
@@ -19,6 +20,7 @@ CLEAN_BEFORE=1
 CLEAN_AFTER=1
 MAKE_64=1
 MAKE_32=1
+NOSKIP=0
 
 #
 # process commandline parameter flags
@@ -26,6 +28,11 @@ MAKE_32=1
 
 if [[ "$*" == *--no-build* ]] ; then
   BUILD=0
+fi
+
+if [[ "$*" == *--rebuild* ]] ; then
+  NOSKIP=1
+  make_commands=${make_commands}" -f"
 fi
 
 if [[ "$*" == *--no-x86_64* ]] ; then
@@ -42,10 +49,6 @@ fi
 
 if [[ "$*" == *--repo-add* ]] ; then
   ADD_TO_REPO=1
-fi
-
-if [[ "$*" == *--force* ]] ; then
-  make_commands=${make_commands}" -f"
 fi
 
 if [[ "x$CLEAN_BEFORE" != "x0" ]] ; then
@@ -75,7 +78,7 @@ function update_from_git () {
 function copy_to_repo (){
   arch=$1
 
-  for j in "*${arch}.pkg.tar.xz"; do
+  for j in *"${arch}.pkg.tar.xz" *any.tar.xz; do
     if [ -f $j ] ; then
       cp $j ${REPO_DIR}/${arch}/ >> ${LOGFILE} 2>&1
     fi
@@ -84,8 +87,8 @@ function copy_to_repo (){
 
 function update_repo () {
   echo "updating repository"
-  for arch in i686 x86_64 any; do
-    repo-add ${REPO_DIR}/${arch}/repo.db.tar.gz ${REPO_DIR}/${arch}/*.tar.xz >> ${LOGFILE} 2>&1
+  for arch in i686 x86_64; do
+    repo-add ${REPO_DIR}/${arch}/archbio.db.tar.gz ${REPO_DIR}/${arch}/*.tar.xz >> ${LOGFILE} 2>&1
   done
 }
 
@@ -93,6 +96,29 @@ function error_exit () {
   echo "ERROR: $1" 1>&2
   echo "See ${LOGFILE} for details"
   exit 1
+}
+
+function requires_rebuild () {
+  local pkgbuild=$1
+
+  local rebuild=0
+
+  if [ -f $pkgbuild ] ; then
+    # get list of filenames that will be produced
+    local files=`${PKGBUILD_PARSER} PKGBUILD pkgfiles`
+    for f in $files
+    do
+      if [ ! -f $f ] ; then
+        rebuild=1
+      fi
+    done
+  fi
+
+  if [ "$rebuild" == "1" ] ; then
+    return 0
+  fi
+
+  return 1
 }
 
 #
@@ -118,23 +144,28 @@ if [[ "x$BUILD" != "x0" ]] ; then
           fi
         fi
 
-        # make 64bit/any package
-        if [ "x$MAKE_64" != "x0" ] ; then
-          echo "making 64bit package" >> ${LOGFILE}
-          make_package || error_exit "Makepkg exited with error"
-        fi
+        if requires_rebuild "PKGBUILD" || [ "x$NOSKIP" != "x0" ] ; then
 
-        # make i686 package
-        if [ "x$MAKE_32" != "x0" ] ; then
-          echo "making 32bit package" >> ${LOGFILE}
-          make_package_32 || error_exit "Makepkg exited with error, see logfile ${LOGFILE}"
-        fi
+          rm -f `${PKGBUILD_PARSER} PKGBUILD pkgfiles`
 
-        if [ "x$ADD_TO_REPO" != "x0" ] ; then
-          for arch in any x86_64 i686
-          do
-            copy_to_repo "$arch" || error_exit "Failed to copy packages to repository ${REPO_DIR}/${arch}"
-          done
+          # make 64bit/any package
+          if [ "x$MAKE_64" != "x0" ] ; then
+            echo "making 64bit package" >> ${LOGFILE}
+            make_package || error_exit "Makepkg exited with error"
+            if [ "x$ADD_TO_REPO" != "x0" ] ; then
+              copy_to_repo "x86_64" || error_exit "Failed to copy packages to repository ${REPO_DIR}/x86_64"
+            fi
+          fi
+
+          # make i686 package
+          if [ "x$MAKE_32" != "x0" ] ; then
+            echo "making 32bit package" >> ${LOGFILE}
+            make_package_32 || error_exit "Makepkg exited with error, see logfile ${LOGFILE}"
+            if [ "x$ADD_TO_REPO" != "x0" ] ; then
+              copy_to_repo "i686" || error_exit "Failed to copy packages to repository ${REPO_DIR}/i686"
+            fi
+          fi
+
         fi
 
         cd ..
