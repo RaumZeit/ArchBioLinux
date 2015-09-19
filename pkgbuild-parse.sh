@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# Taken from Abdó Roig-Maranges' arch-build toolkit
+# which is available here: https://github.com/aroig/arch-build
+#
 
 
 have_function() {
