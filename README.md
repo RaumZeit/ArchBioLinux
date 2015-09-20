@@ -1,4 +1,4 @@
-# General ArchLinux PKGBUILDs
+# PKGBUILDs directory for the ArchBio Linux image
 
 This repo contains some ArchLinux PKGBUILDs that I maintain, and some I don't.
 The main purpose of these PKGBUILDs is to keep ArchBioLinux
