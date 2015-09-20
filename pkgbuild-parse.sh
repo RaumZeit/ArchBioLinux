@@ -122,6 +122,25 @@ case $action in
         done
         ;;
 
+    version)
+        for pkg in "${pkgname[@]}"; do
+            echo "$(get_full_version $pkg)"
+        done            
+        ;;
+
+    info)
+        for pkg in "${pkgname[@]}"; do
+            echo "$pkg\t$pkgver\n"
+        done            
+        ;;
+
+    infohtml)
+        for pkg in "${pkgname[@]}"; do
+            echo "<tr>\n\t<td><a href=\"$url\">$pkg</a></td>\n\t<td>$pkgver</td>\n\t<td>$pkgdesc</td>\n</tr>\n"
+        done            
+        ;;
+
+
     *)
         eval "echo \${$action}"
 esac

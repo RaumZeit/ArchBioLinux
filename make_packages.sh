@@ -134,8 +134,8 @@ if [[ "x$BUILD" != "x0" ]] ; then
     if [ -d $i ]; then
       if [ -f $i/PKGBUILD ]; then
         cd $i;
-        echo "processing $i"
-
+#        echo "processing $i"
+        echo -en `${PKGBUILD_PARSER} PKGBUILD info`
         # update from aur.archlinux.org git repo
         if [ -d .git ] ; then
           if [[ "x$UPDATE" != "x0" ]] ; then

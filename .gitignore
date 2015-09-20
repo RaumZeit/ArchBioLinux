@@ -1,7 +1,15 @@
 # ignore built packages
 *.xz
+*.tar.gz
+*.tar.bz2
+*.tgz
 
 # ignore makepkg build directories
 src/
 pkg/
 
+# ignore the ArchLinux upstream repos (official packages)
+upstream/
+
+# logfile of make_packages.sh
+packages.log
