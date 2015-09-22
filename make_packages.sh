@@ -21,6 +21,7 @@ CLEAN_AFTER=1
 MAKE_64=1
 MAKE_32=1
 NOSKIP=0
+OUTPUT="info"
 
 #
 # process commandline parameter flags
@@ -49,6 +50,10 @@ fi
 
 if [[ "$*" == *--repo-add* ]] ; then
   ADD_TO_REPO=1
+fi
+
+if [[ "$*" == *--html* ]] ; then
+  OUTPUT="infohtml"
 fi
 
 if [[ "x$CLEAN_BEFORE" != "x0" ]] ; then
@@ -129,48 +134,64 @@ function requires_rebuild () {
 echo "" > ${LOGFILE}
 
 if [[ "x$BUILD" != "x0" ]] ; then
-  for i in [a-z]*;do
+  for toolset in  bioinformatics \
+                  cheminformatics \
+                  sciencetools \
+                  devtools \
+                  editors \
+                  graphics \
+                  other
+  do
+    echo "processing $toolset"
+    cd $toolset
+    for i in [a-z]*;do
 
-    if [ -d $i ]; then
-      if [ -f $i/PKGBUILD ]; then
-        cd $i;
-#        echo "processing $i"
-        echo -en `${PKGBUILD_PARSER} PKGBUILD info`
-        # update from aur.archlinux.org git repo
-        if [ -d .git ] ; then
-          if [[ "x$UPDATE" != "x0" ]] ; then
-            echo "updating git repo" >> ${LOGFILE}
-            update_from_git || error_exit "Failed to pull from git repo"
-          fi
-        fi
-
-        if requires_rebuild "PKGBUILD" || [ "x$NOSKIP" != "x0" ] ; then
-
-          rm -f `${PKGBUILD_PARSER} PKGBUILD pkgfiles`
-
-          # make 64bit/any package
-          if [ "x$MAKE_64" != "x0" ] ; then
-            echo "making 64bit package" >> ${LOGFILE}
-            make_package || error_exit "Makepkg exited with error"
-            if [ "x$ADD_TO_REPO" != "x0" ] ; then
-              copy_to_repo "x86_64" || error_exit "Failed to copy packages to repository ${REPO_DIR}/x86_64"
+      if [ -d $i ]; then
+        if [ -f $i/PKGBUILD ]; then
+          cd $i;
+#          echo "processing $i"
+          echo -en `${PKGBUILD_PARSER} PKGBUILD ${OUTPUT}`
+          # update from aur.archlinux.org git repo
+          if [ -d .git ] ; then
+            if [[ "x$UPDATE" != "x0" ]] ; then
+              echo "updating git repo" >> ${LOGFILE}
+              update_from_git || error_exit "Failed to pull from git repo"
             fi
           fi
 
-          # make i686 package
-          if [ "x$MAKE_32" != "x0" ] ; then
-            echo "making 32bit package" >> ${LOGFILE}
-            make_package_32 || error_exit "Makepkg exited with error, see logfile ${LOGFILE}"
-            if [ "x$ADD_TO_REPO" != "x0" ] ; then
-              copy_to_repo "i686" || error_exit "Failed to copy packages to repository ${REPO_DIR}/i686"
+          if requires_rebuild "PKGBUILD" || [ "x$NOSKIP" != "x0" ] ; then
+
+            rm -f `${PKGBUILD_PARSER} PKGBUILD pkgfiles`
+
+            # make 64bit/any package
+            if [ "x$MAKE_64" != "x0" ] ; then
+              echo "making 64bit package" >> ${LOGFILE}
+              make_package || error_exit "Makepkg exited with error"
+              if [ "x$ADD_TO_REPO" != "x0" ] ; then
+                copy_to_repo "x86_64" || error_exit "Failed to copy packages to repository ${REPO_DIR}/x86_64"
+              fi
             fi
+
+            # make i686 package
+            if [ "x$MAKE_32" != "x0" ] ; then
+              echo "making 32bit package" >> ${LOGFILE}
+              make_package_32 || error_exit "Makepkg exited with error, see logfile ${LOGFILE}"
+              if [ "x$ADD_TO_REPO" != "x0" ] ; then
+                copy_to_repo "i686" || error_exit "Failed to copy packages to repository ${REPO_DIR}/i686"
+              fi
+            fi
+
           fi
 
+          cd ..
+        else
+          if [ -d $i/trunk ] ; then
+            echo -en `${PKGBUILD_PARSER} $i/trunk/PKGBUILD ${OUTPUT}`
+          fi
         fi
-
-        cd ..
       fi
-    fi
+    done
+    cd ..
   done
 fi
 
